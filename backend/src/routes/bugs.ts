@@ -70,9 +70,9 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   if (buildId) where.buildId = buildId;
   if (search) {
     where.OR = [
-      { title: { contains: search } },
-      { bugId: { contains: search } },
-      { description: { contains: search } },
+      { title: { contains: search, mode: 'insensitive' } },
+      { bugId: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 

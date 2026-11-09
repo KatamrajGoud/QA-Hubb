@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/sqlite-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db.backup"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  role          String   @default("DEVELOPER")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ownedProjects    Project[]       @relation("ProjectOwner")
+  projectMembers   ProjectMember[]
+  reportedBugs     Bug[]           @relation("BugReporter")
+  assignedBugs     Bug[]           @relation("BugAssignee")
+  bugComments      BugComment[]
+  dailyUpdates     DailyUpdate[]
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+  uploads          Build[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String   @default("")
+  status      String   @default("ACTIVE")
+  priority    String   @default("MEDIUM")
+  techStack   String   @default("")
+  startDate   DateTime?
+  targetDate  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId   String
+  owner     User   @relation("ProjectOwner", fields: [ownerId], references: [id])
+
+  members      ProjectMember[]
+  resources    Resource[]
+  builds       Build[]
+  bugs         Bug[]
+  dailyUpdates DailyUpdate[]
+  activityLogs ActivityLog[]
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  role      String  @default("DEVELOPER")
+  projectId String
+  userId    String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  url         String
+  description String   @default("")
+  addedById   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Build {
+  id           String   @id @default(cuid())
+  version      String
+  platform     String
+  releaseDate  DateTime @default(now())
+  buildUrl     String   @default("")
+  releaseNotes String   @default("")
+  qaStatus     String   @default("PENDING")
+  testingNotes String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projectId    String
+  uploadedById String?
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+
+  bugs         Bug[]    @relation("BugBuild")
+  fixedBugs    Bug[]    @relation("BugFixedBuild")
+}
+
+model Bug {
+  id           String   @id @default(cuid())
+  bugId        String   @unique
+  title        String
+  description  String   @default("")
+  module       String   @default("")
+  stepsToRepro String   @default("")
+  expected     String   @default("")
+  actual       String   @default("")
+  severity     String   @default("MEDIUM")
+  priority     String   @default("MEDIUM")
+  status       String   @default("NEW")
+  evidenceUrl  String   @default("")
+  retestNotes  String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projectId    String
+  buildId      String?
+  fixedBuildId String?
+  reporterId   String?
+  assigneeId   String?
+
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  build       Build?     @relation("BugBuild", fields: [buildId], references: [id])
+  fixedBuild  Build?     @relation("BugFixedBuild", fields: [fixedBuildId], references: [id])
+  reporter    User?      @relation("BugReporter", fields: [reporterId], references: [id])
+  assignee    User?      @relation("BugAssignee", fields: [assigneeId], references: [id])
+  comments    BugComment[]
+}
+
+model BugComment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bugId   String
+  userId  String
+  bug     Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  user    User @relation(fields: [userId], references: [id])
+}
+
+model DailyUpdate {
+  id          String   @id @default(cuid())
+  workDone    String   @default("")
+  currentTask String   @default("")
+  blockers    String   @default("")
+  nextSteps   String   @default("")
+  timeSpent   Float?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String?
+  userId    String
+
+  project Project? @relation(fields: [projectId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  link      String   @default("")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  entity    String
+  entityId  String
+  action    String
+  details   String   @default("")
+  createdAt DateTime @default(now())
+
+  userId    String?
+  projectId String?
+  user      User?    @relation(fields: [userId], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
+}

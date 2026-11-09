@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
+    "migrate:from-sqlite": "tsx src/scripts/migrate-sqlite-to-pg.ts",
     "create-admin": "tsx src/scripts/create-admin.ts",
     "test": "vitest run"
   },

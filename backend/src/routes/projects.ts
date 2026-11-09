@@ -44,9 +44,9 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   const where: any = {};
   if (search) {
     where.OR = [
-      { name: { contains: search } },
-      { code: { contains: search } },
-      { description: { contains: search } },
+      { name: { contains: search, mode: 'insensitive' } },
+      { code: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
   if (status) where.status = status;
